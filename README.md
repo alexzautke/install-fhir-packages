@@ -1,4 +1,4 @@
 ## install-fhir-packages
 
-Upload a FHIR Package to any FHIR server using Firely's Torinox tool (https://simplifier.net/downloads/torinox).
+Upload the conformance resources bundled in a FHIR package to any FHIR server using Firely's Torinox tool (https://simplifier.net/downloads/torinox).
 
