@@ -16,3 +16,10 @@ Upload package to FHIR server: https://vonk.fire.ly/administration/r4
 
 ```
 
+## Requirements
+
+The script will automatically check on start-up if all of the following requirements are installed:
+
+- jq (https://stedolan.github.io/jq/)
+- fhir4 (torinox)
+
