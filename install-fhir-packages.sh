@@ -14,6 +14,8 @@ done
 
 fhirCommand="fhir4"
 
+$fhirCommand login
+
 echo -n "FHIR package name: "
 read packageName
 if [ -z "$packageName" ]; then
