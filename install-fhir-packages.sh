@@ -48,14 +48,19 @@ if [ $endpointSucccess != "200" ]; then
     if [ "$forcePackageInstall" = "n" ] || [ "$forcePackageInstall" != "y" ]; then
         exit_with_message "Exiting..."
     fi
+else
+    echo -e "\t Successfully reached $fhirServer"
 fi
 
 echo "Installing FHIR package '$packageName' using version $packageVersion"
 $fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
 
+echo "Checking if FHIR '$packageName' using version $packageVersion was successfully installed"
 $fhirCommand cache | grep -q $packageName#$packageVersion
 if [ $? -eq 1 ]; then
     exit_with_message "Failed to install package $packageName using version $packageVersion"
+else
+    echo -e "\t Successfully found package '$packageName' with version '$packageVersion' in cache"
 fi
 
 canonicals=$($fhirCommand canonicals $packageName $packageVersion)
