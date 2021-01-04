@@ -5,15 +5,16 @@ exit_with_message () {
   exit 1
 }
 
-for dependency in "jq" "fhir4"
+for dependency in "jq" "fhir"
 do
     if ! [ -x "$(command -v $dependency)" ]; then
         exit_with_message "$dependency is not installed."
     fi
 done
 
-fhirCommand="fhir4"
+fhirCommand="fhir"
 
+$fhirCommand mode r4
 $fhirCommand login
 
 echo -n "FHIR package name: "
@@ -56,7 +57,7 @@ echo "Installing FHIR package '$packageName' using version $packageVersion"
 $fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
 
 echo "Checking if FHIR '$packageName' using version $packageVersion was successfully installed"
-$fhirCommand cache | grep -q $packageName#$packageVersion
+$fhirCommand cache | grep -q $packageName@$packageVersion
 if [ $? -eq 1 ]; then
     exit_with_message "Failed to install package $packageName using version $packageVersion"
 else
@@ -67,7 +68,7 @@ canonicals=$($fhirCommand canonicals $packageName $packageVersion)
 for canonical in $canonicals; do
     echo -e "\nTrying to resolve $canonical..."
     $fhirCommand resolve $canonical | awk '{ print "\t" $0 }'
-    json=$($fhirCommand show --json)
+    json=$($fhirCommand show --format json)
 
     resourceType=$(echo $json | jq -r '.resourceType')
     echo "Uploading $canonical ($resourceType) to $fhirServer"
