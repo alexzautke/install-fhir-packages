@@ -1,6 +1,6 @@
 ## install-fhir-packages
 
-Upload the conformance resources bundled in a FHIR package to any FHIR server using Firely's Torinox tool (https://simplifier.net/downloads/torinox).
+Upload the conformance resources bundled in a FHIR package to any FHIR server using Firely.Terminal tool (https://simplifier.net/downloads/firely-terminal).
 
 ## Quickstart
 
@@ -21,5 +21,5 @@ Upload package to FHIR server: https://vonk.fire.ly/administration/r4
 The script will automatically check on start-up if all of the following requirements are installed:
 
 - jq (https://stedolan.github.io/jq/)
-- fhir4 (torinox)
+- fhir (firely.terminal)
 
