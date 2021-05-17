@@ -13,8 +13,6 @@ do
 done
 
 fhirCommand="fhir"
-
-$fhirCommand mode r4
 $fhirCommand login
 
 echo -n "FHIR package name: "
@@ -57,7 +55,8 @@ echo "Installing FHIR package '$packageName' using version $packageVersion"
 $fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
 
 echo "Checking if FHIR '$packageName' using version $packageVersion was successfully installed"
-$fhirCommand cache | grep -q $packageName@$packageVersion
+packageNameWithoutDash=$(echo "$packageName" | sed -e "s/-/@/") # Temporary fix for FT 2.1.1, packages containing an '-' will show up with '@' in the cache
+$fhirCommand cache | grep -q $packageNameWithoutDash#$packageVersion
 if [ $? -eq 1 ]; then
     exit_with_message "Failed to install package $packageName using version $packageVersion"
 else
@@ -68,7 +67,7 @@ canonicals=$($fhirCommand canonicals $packageName $packageVersion)
 for canonical in $canonicals; do
     echo -e "\nTrying to resolve $canonical..."
     $fhirCommand resolve $canonical | awk '{ print "\t" $0 }'
-    json=$($fhirCommand show --format json)
+    json=$($fhirCommand show --output json)
 
     resourceType=$(echo $json | jq -r '.resourceType')
     echo "Uploading $canonical ($resourceType) to $fhirServer"
