@@ -61,6 +61,8 @@ if [ $? -eq 1 ]; then
     exit_with_message "Failed to install package $packageName using version $packageVersion"
 else
     echo -e "\t Successfully found package '$packageName' with version '$packageVersion' in cache"
+    #Generate a FHIR package manifest if not present
+    $fhirCommand init
 fi
 
 canonicals=$($fhirCommand canonicals $packageName $packageVersion)
