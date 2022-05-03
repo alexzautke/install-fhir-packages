@@ -81,3 +81,5 @@ for canonical in $canonicals; do
         $fhirCommand put $fhirServer | awk '{ print "\t" $0 }'
     fi
 done
+
+echo "Successfully uploaded package '$packageName' using version $packageVersion to $fhirServer"
