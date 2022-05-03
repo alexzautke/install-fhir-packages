@@ -70,7 +70,7 @@ for canonical in $canonicals; do
     json=$($fhirCommand show --output json)
 
     resourceType=$(echo $json | jq -r '.resourceType')
-    echo "Uploading $canonical ($resourceType) to $fhirServer"
+    echo -e "\tUploading $canonical ($resourceType) to $fhirServer"
 
     # Should we do a PUT or POST?
     id=$(echo $json | jq -r -e '.id')
