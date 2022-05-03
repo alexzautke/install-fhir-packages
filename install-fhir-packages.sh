@@ -52,6 +52,11 @@ else
 fi
 
 echo "Installing FHIR package '$packageName' using version $packageVersion"
+
+if [ ! -f "package.json" ]; then
+    fhir init
+fi
+
 $fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
 
 echo "Checking if FHIR '$packageName' using version $packageVersion was successfully installed"
