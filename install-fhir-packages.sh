@@ -5,6 +5,29 @@ exit_with_message () {
   exit 1
 }
 
+check_availability_metadata () {
+    echo -e "\nChecking if $fhirServer/metadata can be reached"
+    endpointSucccess=$(curl -sL -w '%{http_code}' "$fhirServer/metadata" -o /dev/null)
+    if [ $endpointSucccess != "200" ]; then
+        echo "Could not reach FHIR server $fhirServer"
+        echo "Continue anyway (Y/n)?"
+        read forcePackageInstall
+
+        forcePackageInstall=${forcePackageInstall:-y}
+        forcePackageInstall=$(echo "$forcePackageInstall" | awk '{print tolower($0)}')
+
+        if [ "$forcePackageInstall" = "n" ] || [ "$forcePackageInstall" != "y" ]; then
+            exit_with_message "Exiting..."
+        fi
+    else
+        echo -e "\t Successfully reached $fhirServer"
+    fi
+}
+
+# ------
+# Setup
+# ------
+
 for dependency in "jq" "fhir"
 do
     if ! [ -x "$(command -v $dependency)" ]; then
@@ -34,24 +57,9 @@ if [ -z "$fhirServer" ]; then
 fi
 $fhirCommand server add $fhirServer $fhirServer | awk '{ print "\t" $0 }'
 
-echo "Checking if $fhirServer/metadata can be reached"
-endpointSucccess=$(curl -sL -w '%{http_code}' "$fhirServer/metadata" -o /dev/null)
-if [ $endpointSucccess != "200" ]; then
-    echo "Could not reach FHIR server $fhirServer"
-    echo "Continue anyway (Y/n)?"
-    read forcePackageInstall
+check_availability_metadata
 
-    forcePackageInstall=${forcePackageInstall:-y}
-    forcePackageInstall=$(echo "$forcePackageInstall" | awk '{print tolower($0)}')
-
-    if [ "$forcePackageInstall" = "n" ] || [ "$forcePackageInstall" != "y" ]; then
-        exit_with_message "Exiting..."
-    fi
-else
-    echo -e "\t Successfully reached $fhirServer"
-fi
-
-echo "Installing FHIR package '$packageName' using version $packageVersion"
+echo -e "\nInstalling FHIR package '$packageName' using version $packageVersion"
 
 if [ ! -f "package.json" ]; then
     fhir init
@@ -59,7 +67,7 @@ fi
 
 $fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
 
-echo "Checking if FHIR '$packageName' using version $packageVersion was successfully installed"
+echo -e "\nChecking if FHIR '$packageName' using version $packageVersion was successfully installed"
 $fhirCommand cache | grep -q $packageName#$packageVersion
 if [ $? -eq 1 ]; then
   $fhirCommand cache | grep -q $packageName@$packageVersion # Re-try with @ instead of # as the separator
@@ -70,6 +78,10 @@ if [ $? -eq 1 ]; then
 else
     echo -e "\t Successfully found package '$packageName' with version '$packageVersion' in cache"
 fi
+
+# ----------------------------
+# Upload conformance resource
+# ----------------------------
 
 canonicals=$($fhirCommand canonicals $packageName $packageVersion)
 for canonical in $canonicals; do
@@ -90,3 +102,50 @@ for canonical in $canonicals; do
 done
 
 echo "Successfully uploaded package '$packageName' using version $packageVersion to $fhirServer"
+
+# ----------------
+# Upload examples
+# ----------------
+
+echo -e "\nUpload example resources from FHIR package '$packageName' using version $packageVersion (Y/n)?"
+read installExamples
+
+echo -n "Upload examples to FHIR server: "
+read fhirServer
+if [ -z "$fhirServer" ]; then
+    exit_with_message "It's mandatory to specify the endpoint of a FHIR server. Exiting..."
+fi
+$fhirCommand server add $fhirServer $fhirServer | awk '{ print "\t" $0 }'
+
+check_availability_metadata
+
+installExamples=${installExamples:-y}
+installExamples=$(echo "$installExamples" | awk '{print tolower($0)}')
+
+if [ "$installExamples" = "n" ] || [ "$installExamples" != "y" ]; then
+    exit_with_message "Exiting..."
+fi
+
+currentWorkingDir=$(pwd)
+fhirCacheLocation=$($fhirCommand cache --location)
+cd $fhirCacheLocation
+cd $packageName#$packageVersion/package/examples
+$fhirCommand push .
+while true; do
+
+    currentResource=$(fhir peek || true)
+    if [[ "$currentResource" == *"The stack is empty."* ]]; then
+        echo "Uploaded all example FHIR resources to $fhirServer"
+        break
+    fi
+
+    echo "Uploading $currentResource ..."
+    json=$($fhirCommand show --output json)
+    id=$(echo $json | jq -r -e '.id')
+    if [ $? = 1 ]; then
+        $fhirCommand post $fhirServer | awk '{ print "\t" $0 }'
+    else
+        $fhirCommand put $fhirServer | awk '{ print "\t" $0 }'
+    fi
+
+done
