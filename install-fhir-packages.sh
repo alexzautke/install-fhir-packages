@@ -46,9 +46,13 @@ fi
 
 echo -n "FHIR package version (latest): "
 read packageVersion
+
+rawOutputVersions=$($fhirCommand versions $packageName --raw)
 if [ -z "$packageVersion" ]; then
-    packageVersion=$($fhirCommand versions $packageName --raw | jq -r '."dist-tags"."latest"')
+    packageVersion=$(echo $rawOutputVersions | jq -r '."dist-tags"."latest"')
 fi
+fhirVersion=$(echo $rawOutputVersions | jq -r ".versions.\"$packageVersion\".fhirVersion" | awk '{print tolower($0)}')
+fhir spec $fhirVersion --project
 
 echo -n "Upload package to FHIR server: "
 read fhirServer
