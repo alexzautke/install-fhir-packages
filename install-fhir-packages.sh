@@ -77,7 +77,6 @@ for canonical in $canonicals; do
     if [ $? = 1 ]; then
         $fhirCommand post $fhirServer | awk '{ print "\t" $0 }'
     else
-        echo "$id"
         $fhirCommand put $fhirServer | awk '{ print "\t" $0 }'
     fi
 done
