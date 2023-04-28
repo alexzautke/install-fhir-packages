@@ -10,7 +10,7 @@ All FHIR packages will be installed locally in this folder before being uploaded
 ```
 FHIR package name: de.basisprofil.r4
 FHIR package version (latest): <enter>
-Upload package to FHIR server: https://vonk.fire.ly/administration/r4
+Upload package to FHIR server: https://server.fire.ly/administration/r4
 
 ...
 
