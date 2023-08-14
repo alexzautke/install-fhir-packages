@@ -38,21 +38,60 @@ done
 fhirCommand="fhir"
 $fhirCommand login
 
+
+echo -n "Use local file (local filename or leave empty for cloud package):"
+read fileName
+
 echo -n "FHIR package name: "
 read packageName
 if [ -z "$packageName" ]; then
     exit_with_message "It's mandatory to specify the name of a FHIR package. Exiting..."
 fi
 
-echo -n "FHIR package version (latest): "
-read packageVersion
+if [ -z "$fileName" ]; then
 
-rawOutputVersions=$($fhirCommand versions $packageName --raw)
-if [ -z "$packageVersion" ]; then
-    packageVersion=$(echo $rawOutputVersions | jq -r '."dist-tags"."latest"')
+    echo -n "FHIR package version (latest): "
+    read packageVersion
+
+    rawOutputVersions=$($fhirCommand versions $packageName --raw)
+    if [ -z "$packageVersion" ]; then
+        packageVersion=$(echo $rawOutputVersions | jq -r '."dist-tags"."latest"')
+    fi
+    fhirVersion=$(echo $rawOutputVersions | jq -r ".versions.\"$packageVersion\".fhirVersion" | awk '{print tolower($0)}')
+    fhir spec $fhirVersion --project
+
+    echo -e "\nInstalling FHIR package '$packageName' using version $packageVersion"
+
+    if [ ! -f "package.json" ]; then
+        fhir init
+    fi
+
+    $fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
+
+else
+
+    echo -n "FHIR package version: "
+    read packageVersion
+    if [ -z "$packageVersion" ]; then
+        exit_with_message "It's mandatory to specify the version of the FHIR package. Exiting..."
+    fi
+
+    echo -n "FHIR version: "
+    read fhirVersion
+    if [ -z "$fhirVersion" ]; then
+        exit_with_message "It's mandatory to the FHIR version. Exiting..."
+    fi
+
+    fhir spec $fhirVersion --project
+
+    if [ ! -f "package.json" ]; then
+        fhir init
+    fi
+
+    echo -e "\nInstalling FHIR package '$fileName'"
+    $fhirCommand install $fileName --file | awk '{ print "\t" $0 }'
+
 fi
-fhirVersion=$(echo $rawOutputVersions | jq -r ".versions.\"$packageVersion\".fhirVersion" | awk '{print tolower($0)}')
-fhir spec $fhirVersion --project
 
 echo -n "Upload package to FHIR server: "
 read fhirServer
@@ -62,14 +101,6 @@ fi
 $fhirCommand server add $fhirServer $fhirServer | awk '{ print "\t" $0 }'
 
 check_availability_metadata
-
-echo -e "\nInstalling FHIR package '$packageName' using version $packageVersion"
-
-if [ ! -f "package.json" ]; then
-    fhir init
-fi
-
-$fhirCommand install $packageName $packageVersion | awk '{ print "\t" $0 }'
 
 echo -e "\nChecking if FHIR '$packageName' using version $packageVersion was successfully installed"
 $fhirCommand cache | grep -q $packageName#$packageVersion
